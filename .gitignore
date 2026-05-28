@@ -1,0 +1,22 @@
+.vercel/
+.env
+.env.*
+
+# Local/generated logs
+*.log
+email_log.txt
+email_sim_messages.txt
+sms_log.txt
+product_log.txt
+delivery/upload_log.txt
+config/category_image_debug.log
+
+# User uploaded private data
+uploads/documents/
+uploads/profile_photos/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+
+uploads/documents/
+uploads/profile_photos/
+
+*.log
+email_log.txt
+email_sim_messages.txt
+sms_log.txt
+product_log.txt
+delivery/upload_log.txt
+config/category_image_debug.log

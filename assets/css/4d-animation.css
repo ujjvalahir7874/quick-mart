@@ -1,0 +1,145 @@
+/* 4D Animation Core Styles */
+:root {
+    --perspective: 1000px;
+    --rotation-sensitivity: 15deg;
+    --depth-level: 50px;
+}
+
+/* Base class to enable 3D space */
+.animate-4d-container {
+    perspective: var(--perspective);
+    transform-style: preserve-3d;
+}
+
+/* The element that will be animated */
+.tilt-card {
+    transition: transform 0.1s ease-out;
+    /* Smooth but snappy for tracking */
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    will-change: transform;
+    position: relative;
+    overflow: hidden;
+    /* For glare effect */
+}
+
+/* Inner content to pop out */
+.tilt-card-inner {
+    transform: translateZ(20px);
+}
+
+.tilt-card-content {
+    transform: translateZ(40px);
+}
+
+/* Floating Animation (Time Dimension) */
+@keyframes float-4d {
+    0% {
+        transform: translateY(0px) translateZ(0);
+    }
+
+    50% {
+        transform: translateY(-10px) translateZ(10px);
+    }
+
+    100% {
+        transform: translateY(0px) translateZ(0);
+    }
+}
+
+.floating-4d {
+    animation: float-4d 3s ease-in-out infinite;
+}
+
+/* Glare Effect */
+.glare-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: linear-gradient(125deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.05) 45%,
+            rgba(255, 255, 255, 0.4) 50%,
+            rgba(255, 255, 255, 0.05) 55%,
+            rgba(255, 255, 255, 0) 100%);
+    transform: translateZ(1px);
+    /* Sit on top */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    mix-blend-mode: overlay;
+}
+
+.tilt-card:hover .glare-overlay {
+    opacity: 1;
+}
+
+/* Hero Section 4D Enhancements */
+.hero-4d {
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+.hero-4d-layer-bg {
+    transform: translateZ(-50px) scale(1.1);
+}
+
+.hero-4d-layer-mid {
+    transform: translateZ(0);
+}
+
+.hero-4d-layer-front {
+    transform: translateZ(50px);
+}
+
+/* Apply 4D lightness to buttons */
+.btn-4d {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+.btn-4d:hover {
+    transform: translateY(-3px) translateZ(10px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-4d:active {
+    transform: translateY(-1px) translateZ(5px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Product Card Specifics */
+.product-card-4d {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+.product-image-4d {
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.product-card-4d:hover .product-image-4d {
+    transform: scale(1.1) translateZ(30px) rotateZ(-2deg);
+}
+
+/* Page Transitions */
+.page-enter {
+    animation: pageIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes pageIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) rotateX(5deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) rotateX(0);
+    }
+}
