@@ -48,7 +48,7 @@ try {
                 }
             }
         }
-    } else {
+    } elseif (!$usingEnvDatabase || getenv('RUN_DB_MAINTENANCE') === '1') {
         // Ensure status column is VARCHAR and has all necessary values
         // We use MODIFY to change the ENUM from schema.sql to VARCHAR
         try {
@@ -567,13 +567,12 @@ function isAdmin() {
 function get_setting($key, $default = null) {
     global $pdo;
     static $cache = [];
-    if (isset($cache[$key])) return $cache[$key];
+    if (array_key_exists($key, $cache)) return $cache[$key];
     $stmt = $pdo->prepare("SELECT setting_value FROM app_settings WHERE setting_key = ?");
     $stmt->execute([$key]);
     $val = $stmt->fetchColumn();
-    if ($val === false) return $default;
-    $cache[$key] = $val;
-    return $val;
+    $cache[$key] = ($val === false) ? $default : $val;
+    return $cache[$key];
 }
 
 function set_setting($key, $value) {
