@@ -504,11 +504,15 @@ try { $pdo->exec("ALTER TABLE users ADD COLUMN remember_token VARCHAR(255) DEFAU
     if (php_sapi_name() === 'cli') {
         die("Database Error: " . $e->getMessage());
     }
+    $isVercel = getenv('VERCEL') || getenv('VERCEL_ENV');
+    $helpMessage = $isVercel
+        ? 'This Vercel deployment needs a hosted MySQL database. Add DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, and optional DB_PORT in Vercel Project Settings, then redeploy.'
+        : 'Please ensure your MySQL server is running in XAMPP.';
     ?>
     <div style="padding: 20px; font-family: sans-serif; border: 1px solid #cc0000; background: #fff5f5; color: #cc0000; border-radius: 5px; margin: 20px;">
         <h3 style="margin-top: 0;">Database Connection Error</h3>
         <p><?php echo htmlspecialchars($e->getMessage()); ?></p>
-        <p>Please ensure your MySQL server is running in XAMPP.</p>
+        <p><?php echo htmlspecialchars($helpMessage); ?></p>
     </div>
     <?php
     exit;
