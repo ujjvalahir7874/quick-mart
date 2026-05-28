@@ -20,3 +20,5 @@ uploads/profile_photos/
 Thumbs.db
 .idea/
 .vscode/
+
+.vercel
