@@ -32,7 +32,7 @@ if (
     exit;
 }
 
-chdir($root);
+chdir(dirname($target));
 $_SERVER['SCRIPT_FILENAME'] = $target;
 $_SERVER['SCRIPT_NAME'] = $path;
 $_SERVER['PHP_SELF'] = $path;
