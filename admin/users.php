@@ -200,7 +200,7 @@ $users = $pdo->query("
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
                                         <?php if ($u['profile_photo']): ?>
-                                            <img src="../<?php echo htmlspecialchars($u['profile_photo']); ?>" class="rounded-circle me-3 object-fit-cover" width="40" height="40">
+                                            <img src="<?php echo htmlspecialchars(uploadedAssetSrc($u['profile_photo'])); ?>" class="rounded-circle me-3 object-fit-cover" width="40" height="40">
                                         <?php else: ?>
                                             <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($u['full_name']); ?>&background=random" class="rounded-circle me-3" width="40" height="40">
                                         <?php endif; ?>

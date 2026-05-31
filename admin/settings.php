@@ -10,6 +10,7 @@ if (!isAdmin()) {
 }
 
 $message = '';
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $maintenance = isset($_POST['maintenance_mode']) ? '1' : '0';
     $allow_regs = isset($_POST['allow_registrations']) ? '1' : '0';
@@ -52,26 +53,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['fallback_recipe_default'])) set_setting('fallback_recipe_default', $_POST['fallback_recipe_default']);
     
     // Handle File Uploads
-    $upload_dir = '../uploads/';
-    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-    
-    if (isset($_FILES['founder_image']) && $_FILES['founder_image']['error'] === UPLOAD_ERR_OK) {
-        $ext = pathinfo($_FILES['founder_image']['name'], PATHINFO_EXTENSION);
-        $filename = 'founder_' . time() . '.' . $ext;
-        if (move_uploaded_file($_FILES['founder_image']['tmp_name'], $upload_dir . $filename)) {
-            set_setting('founder_image', 'uploads/' . $filename);
-        }
-    }
-    
-    if (isset($_FILES['ceo_image']) && $_FILES['ceo_image']['error'] === UPLOAD_ERR_OK) {
-        $ext = pathinfo($_FILES['ceo_image']['name'], PATHINFO_EXTENSION);
-        $filename = 'ceo_' . time() . '.' . $ext;
-        if (move_uploaded_file($_FILES['ceo_image']['tmp_name'], $upload_dir . $filename)) {
-            set_setting('ceo_image', 'uploads/' . $filename);
-        }
+    $upload_error = null;
+    $founder_image = storeUploadedAsset($_FILES['founder_image'] ?? null, '../uploads', 'founder_', $upload_error, ['jpg', 'jpeg', 'png', 'webp', 'avif']);
+    if ($founder_image === false) {
+        $error = $upload_error ?: 'Founder image upload failed.';
+    } elseif ($founder_image) {
+        set_setting('founder_image', $founder_image);
     }
 
-    $message = 'Settings saved successfully';
+    $ceo_image = storeUploadedAsset($_FILES['ceo_image'] ?? null, '../uploads', 'ceo_', $upload_error, ['jpg', 'jpeg', 'png', 'webp', 'avif']);
+    if ($ceo_image === false) {
+        $error = $upload_error ?: 'CEO image upload failed.';
+    } elseif ($ceo_image) {
+        set_setting('ceo_image', $ceo_image);
+    }
+
+    if (!$error) {
+        $message = 'Settings saved successfully';
+    }
 }
 
 $maintenance_mode = (int)(get_setting('maintenance_mode', '0') ?? 0);
@@ -146,6 +145,9 @@ $masked_call_relay_number = get_setting('masked_call_relay_number', '1800123456'
 
         <?php if ($message): ?>
         <div class="alert alert-success border-0 rounded-4"><?php echo $message; ?></div>
+        <?php endif; ?>
+        <?php if ($error): ?>
+        <div class="alert alert-danger border-0 rounded-4"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
         <div class="card">
@@ -315,7 +317,7 @@ $masked_call_relay_number = get_setting('masked_call_relay_number', '1800123456'
                             <label class="form-label small text-muted">Founder Image (Optional)</label>
                             <input type="file" name="founder_image" class="form-control form-control-sm" accept="image/*">
                             <?php if ($founder_img = get_setting('founder_image')): ?>
-                                <img src="../<?php echo htmlspecialchars($founder_img); ?>" width="50" height="50" class="mt-2 rounded object-fit-cover shadow-sm">
+                                <img src="<?php echo htmlspecialchars(uploadedAssetSrc($founder_img)); ?>" width="50" height="50" class="mt-2 rounded object-fit-cover shadow-sm">
                             <?php endif; ?>
                         </div>
                         <div class="col-md-6">
@@ -324,7 +326,7 @@ $masked_call_relay_number = get_setting('masked_call_relay_number', '1800123456'
                             <label class="form-label small text-muted">CEO Image (Optional)</label>
                             <input type="file" name="ceo_image" class="form-control form-control-sm" accept="image/*">
                             <?php if ($ceo_img = get_setting('ceo_image')): ?>
-                                <img src="../<?php echo htmlspecialchars($ceo_img); ?>" width="50" height="50" class="mt-2 rounded object-fit-cover shadow-sm">
+                                <img src="<?php echo htmlspecialchars(uploadedAssetSrc($ceo_img)); ?>" width="50" height="50" class="mt-2 rounded object-fit-cover shadow-sm">
                             <?php endif; ?>
                         </div>
                     </div>

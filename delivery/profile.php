@@ -37,18 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             exit;
         }
 
-        $upload_dir = realpath(__DIR__ . '/../uploads/documents') . DIRECTORY_SEPARATOR;
-        if (!$upload_dir) {
-            $target_dir = __DIR__ . '/../uploads/documents/';
-            if (!is_dir($target_dir)) {
-                mkdir($target_dir, 0777, true);
-            }
-            $upload_dir = realpath($target_dir) . DIRECTORY_SEPARATOR;
-        }
-
         if ($_FILES['document']['error'] === UPLOAD_ERR_OK) {
             $name = $_FILES['document']['name'];
-            $tmp_name = $_FILES['document']['tmp_name'];
             $ext = strtolower(trim(pathinfo($name, PATHINFO_EXTENSION)));
             
             $allowed_exts = ['jpg', 'jpeg', 'png', 'pdf', 'webp'];
@@ -58,11 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
 
             $safe_mobile = preg_replace('/[^0-9]/', '', $partner['mobile_no']);
-            $filename = $doc_type . '_' . $safe_mobile . '_' . time() . '.' . $ext;
-            $target_file = $upload_dir . $filename;
-            $db_path = 'uploads/documents/' . $filename;
+            $upload_error = null;
+            $db_path = storeUploadedAsset($_FILES['document'], __DIR__ . '/../uploads/documents', $doc_type . '_' . $safe_mobile . '_', $upload_error, $allowed_exts);
 
-            if (move_uploaded_file($tmp_name, $target_file)) {
+            if ($db_path) {
             $col_name = 'doc_' . $doc_type;
             
             // Clear rejection flags for this specific document if it was rejected
@@ -93,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 file_put_contents('upload_log.txt', date('Y-m-d H:i:s') . " - DB Error: " . $error_msg . "\n", FILE_APPEND);
             }
         } else {
-            $error_msg = 'Permission denied. Could not save file to ' . $target_file;
+            $error_msg = $upload_error ?: 'Could not save uploaded file.';
             file_put_contents('upload_log.txt', date('Y-m-d H:i:s') . " - Move Error: " . $error_msg . "\n", FILE_APPEND);
         }
     } else {
@@ -156,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <div class="profile-header">
     <div class="avatar-large">
         <?php if($partner['doc_photo']): ?>
-            <img src="../<?= $partner['doc_photo'] ?>" class="w-100 h-100 object-fit-cover rounded-circle">
+            <img src="<?= htmlspecialchars(uploadedAssetSrc($partner['doc_photo'])) ?>" class="w-100 h-100 object-fit-cover rounded-circle">
         <?php else: ?>
             <i class="bi bi-person-fill"></i>
         <?php endif; ?>
@@ -244,6 +233,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         foreach($docs as $doc):
             $is_rejected = in_array($doc['id'], $rejected_list);
             $doc_path = $partner['doc_' . $doc['id']];
+            $doc_src = uploadedAssetSrc($doc_path);
+            $is_doc_image = preg_match('/^data:image\//i', (string)$doc_path) || preg_match('/\.(jpg|jpeg|png|gif|webp|avif|jfif)$/i', (string)$doc_path);
             $rejection_reason = $partner['rejection_reason_' . $doc['id']];
         ?>
         <div class="info-item flex-column align-items-stretch">
@@ -263,9 +254,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 <div class="ms-3 text-end d-flex align-items-center gap-2">
                     <?php if($doc_path): ?>
-                        <div onclick="window.open('../<?= $doc_path ?>')" style="cursor: pointer;">
-                            <img src="../<?= $doc_path ?>" class="rounded border" style="width: <?= $doc['id'] == 'photo' ? '40px' : '60px' ?>; height: 40px; object-fit: cover;">
-                        </div>
+                        <?php if($is_doc_image): ?>
+                            <div onclick="window.open('<?= htmlspecialchars($doc_src) ?>')" style="cursor: pointer;">
+                                <img src="<?= htmlspecialchars($doc_src) ?>" class="rounded border" style="width: <?= $doc['id'] == 'photo' ? '40px' : '60px' ?>; height: 40px; object-fit: cover;">
+                            </div>
+                        <?php else: ?>
+                            <a href="<?= htmlspecialchars($doc_src) ?>" target="_blank" class="btn btn-sm btn-light rounded-circle" title="View Document">
+                                <i class="bi bi-file-earmark-pdf text-danger"></i>
+                            </a>
+                        <?php endif; ?>
                         <?php if($is_rejected): ?>
                             <button class="btn btn-sm btn-danger rounded-pill px-3" onclick="triggerUpload('<?= $doc['id'] ?>')">
                                 <i class="bi bi-arrow-repeat me-1"></i> Re-upload

@@ -246,7 +246,7 @@ if (isLoggedIn()) {
                 <div class="swiper-slide py-2">
                     <div class="card h-100 border-0 rounded-4 overflow-hidden shadow-sm hover-shadow transition-all position-relative" style="background: <?php echo htmlspecialchars($offer['bg_gradient']); ?>; min-height: 250px;">
                         <div class="position-absolute h-100 w-50 end-0 top-0 d-none d-sm-block">
-                            <img src="<?php echo htmlspecialchars($offer['image_url']); ?>" alt="Banner Image" class="w-100 h-100 object-fit-cover" style="clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%); mix-blend-mode: multiply; opacity: 0.9;">
+                            <img src="<?php echo htmlspecialchars(uploadedAssetSrc($offer['image_url'], '')); ?>" alt="Banner Image" class="w-100 h-100 object-fit-cover" style="clip-path: polygon(25% 0, 100% 0, 100% 100%, 0% 100%); mix-blend-mode: multiply; opacity: 0.9;">
                         </div>
                         <div class="card-body p-4 p-md-5 position-relative z-index-1 w-75">
                             <?php if(!empty($offer['discount_text'])): ?>

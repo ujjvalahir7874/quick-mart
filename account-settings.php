@@ -39,21 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
             $address_changed = $address !== trim((string)($user['address'] ?? ''));
 
             // Handle Profile Photo Upload
-            if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
-                $file = $_FILES['profile_photo'];
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $allowed = ['jpg', 'jpeg', 'png', 'webp'];
-
-                if (in_array($ext, $allowed)) {
-                    $filename = "user_" . $user_id . "_" . time() . "." . $ext;
-                    $target = "uploads/profile_photos/" . $filename;
-                    
-                    if (move_uploaded_file($file['tmp_name'], $target)) {
-                        $profile_photo = $target;
-                    }
-                } else {
-                    $error = "Invalid image format. Allowed: " . implode(', ', $allowed);
-                }
+            $upload_error = null;
+            $uploaded_photo = storeUploadedAsset($_FILES['profile_photo'] ?? null, 'uploads/profile_photos', 'user_' . $user_id . '_', $upload_error, ['jpg', 'jpeg', 'png', 'webp']);
+            if ($uploaded_photo === false) {
+                $error = $upload_error;
+            } elseif ($uploaded_photo) {
+                $profile_photo = $uploaded_photo;
             }
 
             if (!$error) {

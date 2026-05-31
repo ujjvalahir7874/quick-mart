@@ -206,60 +206,7 @@ foreach ($products as $p) {
 
 // Helper for Product Image Upload with error reporting
 function handleImageUpload($file, &$error_msg = null) {
-    if (isset($file) && $file['error'] !== UPLOAD_ERR_NO_FILE) {
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            $errors = [
-                UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
-                UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
-                UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
-                UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
-                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
-                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
-                UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.'
-            ];
-            $error_msg = $errors[$file['error']] ?? 'Unknown upload error.';
-            return false;
-        }
-
-        $target_dir = "../uploads/products/";
-        if (!file_exists($target_dir)) {
-            if (!mkdir($target_dir, 0777, true)) {
-                $error_msg = "Failed to create directory: $target_dir";
-                return false;
-            }
-        }
-        
-        if (!is_writable($target_dir)) {
-            $error_msg = "Directory is not writable: $target_dir";
-            return false;
-        }
-        
-        $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'jfif'];
-        
-        if (!in_array($file_extension, $allowed_extensions)) {
-            $error_msg = "Invalid file type: $file_extension. Allowed: " . implode(', ', $allowed_extensions);
-            return false;
-        }
-
-        // Validate that it's actually an image
-        $check = @getimagesize($file['tmp_name']);
-        if ($check === false) {
-            $error_msg = "The file is not a valid image (corrupt or invalid format).";
-            return false;
-        }
-
-        $new_filename = uniqid('prod_') . '.' . $file_extension;
-        $target_file = $target_dir . $new_filename;
-        
-        if (move_uploaded_file($file['tmp_name'], $target_file)) {
-            return 'uploads/products/' . $new_filename;
-        } else {
-            $error_msg = "Failed to move uploaded file to $target_file";
-            return false;
-        }
-    }
-    return null;
+    return storeUploadedAsset($file, '../uploads/products', 'prod_', $error_msg);
 }
 
 // Add Product Logic
@@ -1309,7 +1256,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_product'])) {
                         }
                     });
                     if (p.image_url) {
-                        preview.src = p.image_url.startsWith('http') ? p.image_url : '../' + p.image_url;
+                        preview.src = (p.image_url.startsWith('http') || p.image_url.startsWith('data:')) ? p.image_url : '../' + p.image_url;
                         preview.style.display = 'block';
                     } else {
                         preview.style.display = 'none';

@@ -125,14 +125,11 @@ $offers = $stmt->fetchAll();
                             <?php else: ?>
                             <?php foreach ($offers as $o): ?>
                             <?php
-                                $imageSrc = $o['image_url'] ?? '';
+                                $imageSrc = uploadedAssetSrc($o['image_url'] ?? '');
                                 $isBogo = strtoupper((string)($o['offer_type'] ?? 'BANNER')) === 'BOGO';
                                 $ruleText = $isBogo
                                     ? ('Buy ' . (int)$o['buy_quantity'] . ' Get ' . (int)$o['get_quantity'] . ' • ' . str_replace('_', ' ', (string)($o['offer_scope'] ?? 'same_product')))
                                     : 'Banner only';
-                                if (!empty($imageSrc) && !preg_match('/^(https?:)?\/\//i', $imageSrc) && strpos($imageSrc, '../') !== 0) {
-                                    $imageSrc = '../' . ltrim($imageSrc, '/');
-                                }
                             ?>
                             <tr>
                                 <td class="ps-4">

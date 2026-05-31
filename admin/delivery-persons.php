@@ -346,7 +346,7 @@ foreach($top5 as $dp) {
                         </div>
                         <div class="d-flex align-items-center mt-3">
                             <?php if ($topPerformer['doc_photo']): ?>
-                                <img src="../<?= htmlspecialchars($topPerformer['doc_photo']) ?>" class="rounded-circle me-3 border border-3 border-white shadow-sm object-fit-cover" width="60" height="60">
+                                <img src="<?= htmlspecialchars(uploadedAssetSrc($topPerformer['doc_photo'])) ?>" class="rounded-circle me-3 border border-3 border-white shadow-sm object-fit-cover" width="60" height="60">
                             <?php else: ?>
                                 <div class="bg-white bg-opacity-25 text-white rounded-circle me-3 d-flex align-items-center justify-content-center border border-3 border-white shadow-sm" style="width: 60px; height: 60px;">
                                     <i class="bi bi-person-fill fs-3"></i>
@@ -430,7 +430,8 @@ foreach($top5 as $dp) {
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
                                         <?php if ($staff['doc_photo']): ?>
-                                            <img src="../<?php echo htmlspecialchars($staff['doc_photo']); ?>" class="rounded-circle me-3 object-fit-cover" width="40" height="40" style="cursor: pointer;" onclick="window.open('../<?php echo htmlspecialchars($staff['doc_photo']); ?>')">
+                                            <?php $staffPhotoSrc = uploadedAssetSrc($staff['doc_photo']); ?>
+                                            <img src="<?php echo htmlspecialchars($staffPhotoSrc); ?>" class="rounded-circle me-3 object-fit-cover" width="40" height="40" style="cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($staffPhotoSrc); ?>')">
                                         <?php else: ?>
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                                 <i class="bi bi-person-fill"></i>
@@ -755,13 +756,17 @@ foreach($top5 as $dp) {
                     return;
                 }
                 
-                const fullPath = '../' + path.trim();
-                const isImg = path.trim().match(/\.(jpg|jpeg|png|gif|webp)/i);
+                const cleanPath = path.trim();
+                const fullPath = cleanPath.startsWith('data:') || cleanPath.startsWith('http') ? cleanPath : '../' + cleanPath;
+                const isImg = cleanPath.startsWith('data:image/') || cleanPath.match(/\.(jpg|jpeg|png|gif|webp|avif|jfif)$/i);
+                const isPdf = cleanPath.startsWith('data:application/pdf') || cleanPath.match(/\.pdf$/i);
                 
                 if (isImg) {
                     container.innerHTML = `<img src="${fullPath}" class="w-100 h-100 object-fit-contain cursor-pointer" onclick="window.open('${fullPath}')">`;
-                } else {
+                } else if (isPdf) {
                     container.innerHTML = `<a href="${fullPath}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-pdf me-2"></i>View PDF</a>`;
+                } else {
+                    container.innerHTML = `<a href="${fullPath}" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark me-2"></i>View File</a>`;
                 }
             };
             

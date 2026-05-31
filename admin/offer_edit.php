@@ -43,35 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $link_url = $applicable_product_id > 0 ? 'product-details.php?id=' . $applicable_product_id : 'products.php';
     $image_url = $_POST['existing_image_url'] ?? '';
-    if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] !== UPLOAD_ERR_NO_FILE) {
-        if ($_FILES['image_file']['error'] !== UPLOAD_ERR_OK) {
-            $errors = [
-                UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
-                UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
-                UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
-                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
-                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
-                UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.'
-            ];
-            $error = $errors[$_FILES['image_file']['error']] ?? 'Unknown upload error.';
-        } else {
-            $upload_dir = '../uploads/offers/';
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
-            $ext = strtolower(pathinfo($_FILES['image_file']['name'], PATHINFO_EXTENSION));
-            $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'];
-            if (!in_array($ext, $allowed)) {
-                $error = "Invalid file type. Allowed: " . implode(', ', $allowed);
-            } else {
-                $filename = 'offer_' . time() . '.' . $ext;
-                if (move_uploaded_file($_FILES['image_file']['tmp_name'], $upload_dir . $filename)) {
-                    $image_url = 'uploads/offers/' . $filename;
-                } else {
-                    $error = "Failed to move uploaded file.";
-                }
-            }
-        }
+    $error_msg = '';
+    $uploaded_image = storeUploadedAsset($_FILES['image_file'] ?? null, '../uploads/offers', 'offer_', $error_msg, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif']);
+    if ($uploaded_image === false) {
+        $error = $error_msg;
+    } elseif ($uploaded_image) {
+        $image_url = $uploaded_image;
     }
 
     if ($offer_type !== 'BOGO') {
@@ -257,7 +234,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input type="file" name="image_file" class="form-control" accept="image/*">
                             <div class="mt-2">
                                 <small class="text-muted">Current image:</small><br>
-                                <img src="../<?php echo htmlspecialchars($offer['image_url']); ?>" style="max-height: 80px;" class="rounded border mt-1">
+                                <?php $currentOfferImage = uploadedAssetSrc($offer['image_url']); ?>
+                                <img src="<?php echo htmlspecialchars($currentOfferImage); ?>" style="max-height: 80px;" class="rounded border mt-1">
                             </div>
                         </div>
                         <div class="col-md-4">

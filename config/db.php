@@ -158,9 +158,9 @@ try { $pdo->exec("ALTER TABLE users ADD COLUMN remember_token VARCHAR(255) DEFAU
             subtitle VARCHAR(255) NOT NULL,
             discount_text VARCHAR(50) NOT NULL,
             link_url VARCHAR(255) NOT NULL,
-            image_url VARCHAR(255) NOT NULL,
+            image_url LONGTEXT NOT NULL,
             bg_gradient VARCHAR(100) DEFAULT 'linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)',
-            bg_img_url VARCHAR(255) NULL,
+            bg_img_url LONGTEXT NULL,
             badge_text VARCHAR(50) DEFAULT 'Limited Time Offer',
             badge_color VARCHAR(20) DEFAULT 'danger',
             start_date DATE NULL,
@@ -218,7 +218,7 @@ try { $pdo->exec("ALTER TABLE users ADD COLUMN remember_token VARCHAR(255) DEFAU
         $pdo->exec("CREATE TABLE IF NOT EXISTS app_settings (
             id INT AUTO_INCREMENT PRIMARY KEY,
             setting_key VARCHAR(100) NOT NULL UNIQUE,
-            setting_value VARCHAR(255) NULL,
+            setting_value LONGTEXT NULL,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )");
 
@@ -446,10 +446,10 @@ try { $pdo->exec("ALTER TABLE users ADD COLUMN remember_token VARCHAR(255) DEFAU
           try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN fcm_token TEXT NULL AFTER is_verified"); } catch (Exception $e) {}
           
           // Add Document Columns
-          try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN doc_aadhaar VARCHAR(255) NULL AFTER fcm_token"); } catch (Exception $e) {}
-          try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN doc_license VARCHAR(255) NULL AFTER doc_aadhaar"); } catch (Exception $e) {}
-          try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN doc_rc VARCHAR(255) NULL AFTER doc_license"); } catch (Exception $e) {}
-          try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN doc_photo VARCHAR(255) NULL AFTER doc_rc"); } catch (Exception $e) {}
+          try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN doc_aadhaar LONGTEXT NULL AFTER fcm_token"); } catch (Exception $e) {}
+          try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN doc_license LONGTEXT NULL AFTER doc_aadhaar"); } catch (Exception $e) {}
+          try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN doc_rc LONGTEXT NULL AFTER doc_license"); } catch (Exception $e) {}
+          try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN doc_photo LONGTEXT NULL AFTER doc_rc"); } catch (Exception $e) {}
           
           // Add Suspension Columns
           try { $pdo->exec("ALTER TABLE delivery_persons ADD COLUMN is_suspended TINYINT(1) DEFAULT 0 AFTER doc_photo"); } catch (Exception $e) {}
@@ -474,10 +474,28 @@ try { $pdo->exec("ALTER TABLE users ADD COLUMN remember_token VARCHAR(255) DEFAU
          try { $pdo->exec("ALTER TABLE orders ADD CONSTRAINT fk_order_delivery_person FOREIGN KEY (delivery_person_id) REFERENCES delivery_persons(id) ON DELETE SET NULL"); } catch (Exception $e) {}
 
           // Add User Profile Photo Column
-          try { $pdo->exec("ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) NULL AFTER role"); } catch (Exception $e) {}
+          try { $pdo->exec("ALTER TABLE users ADD COLUMN profile_photo LONGTEXT NULL AFTER role"); } catch (Exception $e) {}
 
           // Add Order Notification Columns
           try { $pdo->exec("ALTER TABLE orders ADD COLUMN pickup_notification_sent TINYINT(1) DEFAULT 0 AFTER delivery_otp"); } catch (Exception $e) {}
+
+          $uploadColumnMigrations = [
+              "ALTER TABLE users MODIFY profile_photo LONGTEXT NULL",
+              "ALTER TABLE categories MODIFY image_url LONGTEXT NULL",
+              "ALTER TABLE products MODIFY image_url LONGTEXT NULL",
+              "ALTER TABLE recipes MODIFY image_url LONGTEXT NULL",
+              "ALTER TABLE offers MODIFY image_url LONGTEXT NOT NULL",
+              "ALTER TABLE offers MODIFY bg_img_url LONGTEXT NULL",
+              "ALTER TABLE app_settings MODIFY setting_value LONGTEXT NULL",
+              "ALTER TABLE delivery_persons MODIFY doc_aadhaar LONGTEXT NULL",
+              "ALTER TABLE delivery_persons MODIFY doc_license LONGTEXT NULL",
+              "ALTER TABLE delivery_persons MODIFY doc_rc LONGTEXT NULL",
+              "ALTER TABLE delivery_persons MODIFY doc_photo LONGTEXT NULL",
+          ];
+
+          foreach ($uploadColumnMigrations as $migrationSql) {
+              try { $pdo->exec($migrationSql); } catch (Exception $e) {}
+          }
 
         // Even if tables exist, ensure admin user exists and password is 'admin123'
         // We use a specific hash for 'admin123' to ensure it's always correct
@@ -581,6 +599,84 @@ function set_setting($key, $value) {
     $stmt->execute([$key, $value]);
 }
 
+function isHostedUploadStorage(): bool {
+    return (bool)(getenv('VERCEL') || getenv('DB_HOST'));
+}
+
+function storeUploadedAsset($file, string $relativeDir, string $prefix, &$error_msg = null, array $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'jfif']) {
+    if (!isset($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $errors = [
+            UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+            UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
+            UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.',
+        ];
+        $error_msg = $errors[$file['error']] ?? 'Unknown upload error.';
+        return false;
+    }
+
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($extension, $allowedExtensions, true)) {
+        $error_msg = 'Invalid file type: ' . $extension . '. Allowed: ' . implode(', ', $allowedExtensions);
+        return false;
+    }
+
+    $isSvg = $extension === 'svg';
+    $isPdf = $extension === 'pdf';
+    if (!$isSvg && !$isPdf && @getimagesize($file['tmp_name']) === false) {
+        $error_msg = 'The uploaded file is not a valid image.';
+        return false;
+    }
+
+    if (isHostedUploadStorage()) {
+        $bytes = file_get_contents($file['tmp_name']);
+        if ($bytes === false) {
+            $error_msg = 'Failed to read uploaded file.';
+            return false;
+        }
+        $mime = $isPdf ? 'application/pdf' : ($isSvg ? 'image/svg+xml' : (mime_content_type($file['tmp_name']) ?: 'image/' . $extension));
+        return 'data:' . $mime . ';base64,' . base64_encode($bytes);
+    }
+
+    $targetDir = rtrim($relativeDir, '/\\') . DIRECTORY_SEPARATOR;
+    if (!is_dir($targetDir) && !mkdir($targetDir, 0777, true)) {
+        $error_msg = 'Failed to create directory: ' . $targetDir;
+        return false;
+    }
+
+    if (!is_writable($targetDir)) {
+        $error_msg = 'Directory is not writable: ' . $targetDir;
+        return false;
+    }
+
+    $newFilename = uniqid($prefix, true) . '.' . $extension;
+    $targetFile = $targetDir . $newFilename;
+    if (!move_uploaded_file($file['tmp_name'], $targetFile)) {
+        $error_msg = 'Failed to move uploaded file to ' . $targetFile;
+        return false;
+    }
+
+    $normalizedDir = str_replace('\\', '/', trim($relativeDir, "/\\"));
+    $uploadsPos = strpos($normalizedDir, 'uploads');
+    $publicDir = $uploadsPos !== false ? substr($normalizedDir, $uploadsPos) : 'uploads/' . basename($targetDir);
+
+    return rtrim($publicDir, '/') . '/' . $newFilename;
+}
+
+function uploadedAssetSrc(?string $value, string $relativePrefix = '../'): string {
+    $value = trim((string)$value);
+    if ($value === '') return '';
+    if (preg_match('/^(https?:\/\/|data:)/i', $value)) return $value;
+    return $relativePrefix . ltrim($value, '/');
+}
+
 if (!isAdmin()) {
     $maint = (int)(get_setting('maintenance_mode', '0') ?? 0);
     if ($maint === 1) {
@@ -640,7 +736,7 @@ function logActivity($pdo, $action) {
 // Helper to get product image with fallback to relevant category image
 function getProductImage($image_url, $product_name) {
     if (!empty($image_url)) {
-        if (strpos($image_url, 'http') === 0) return $image_url;
+        if (strpos($image_url, 'http') === 0 || strpos($image_url, 'data:image/') === 0) return $image_url;
         $current_dir = basename(getcwd());
         if ($current_dir === 'admin' && strpos($image_url, 'uploads/') === 0) return '../' . $image_url;
         return $image_url;
@@ -662,7 +758,7 @@ function getProductImage($image_url, $product_name) {
 // Helper to get recipe image with fallback
 function getRecipeImage($image_url, $recipe_name) {
     if (!empty($image_url)) {
-        if (strpos($image_url, 'http') === 0) return $image_url;
+        if (strpos($image_url, 'http') === 0 || strpos($image_url, 'data:image/') === 0) return $image_url;
         $current_dir = basename(getcwd());
         if ($current_dir === 'admin' && strpos($image_url, 'uploads/') === 0) return '../' . $image_url;
         return $image_url;
@@ -686,7 +782,7 @@ function getCategoryImage($image_url, $category_name) {
     $category_name = trim($category_name);
     
     // If it's a full URL, return it as is
-    if (!empty($image_url) && preg_match('/^https?:\/\//i', $image_url)) {
+    if (!empty($image_url) && preg_match('/^(https?:\/\/|data:image\/)/i', $image_url)) {
         return $image_url;
     }
 

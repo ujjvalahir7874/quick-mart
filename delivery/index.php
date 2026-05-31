@@ -305,7 +305,7 @@ $active_orders = $pdo->query("SELECT o.*, u.full_name, u.address FROM orders o J
         <div class="d-flex align-items-center gap-3">
             <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border overflow-hidden" style="width:55px; height:55px;">
                 <?php if (!empty($partner['doc_photo'])): ?>
-                    <img src="../<?= htmlspecialchars($partner['doc_photo']) ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                    <img src="<?= htmlspecialchars(uploadedAssetSrc($partner['doc_photo'])) ?>" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
                 <?php else: ?>
                     <i class="bi bi-person-fill fs-3 text-secondary"></i>
                 <?php endif; ?>

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
     location_source VARCHAR(30) DEFAULT NULL,
     location_updated_at DATETIME DEFAULT NULL,
     role ENUM('customer', 'admin') DEFAULT 'customer',
-    profile_photo VARCHAR(255) NULL,
+    profile_photo LONGTEXT NULL,
     wallet_balance DECIMAL(10, 2) DEFAULT 0.00,
     reset_token VARCHAR(255) DEFAULT NULL,
     reset_token_expiry DATETIME DEFAULT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS categories (
     name VARCHAR(50) NOT NULL,
     parent_id INT DEFAULT NULL,
     status ENUM('Enabled', 'Disabled') DEFAULT 'Enabled',
-    image_url VARCHAR(255),
+    image_url LONGTEXT,
     FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE
 );
 
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS products (
     status ENUM('Active', 'Archived') DEFAULT 'Active',
     is_exclusive TINYINT(1) DEFAULT 0,
     expiry_date DATE DEFAULT NULL,
-    image_url VARCHAR(255),
+    image_url LONGTEXT,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
@@ -91,10 +91,10 @@ CREATE TABLE IF NOT EXISTS delivery_persons (
     is_verified TINYINT(1) DEFAULT 0,
     rating DECIMAL(3, 2) DEFAULT 0.00,
     fcm_token TEXT NULL,
-    doc_aadhaar VARCHAR(255) NULL,
-    doc_license VARCHAR(255) NULL,
-    doc_rc VARCHAR(255) NULL,
-    doc_photo VARCHAR(255) NULL,
+    doc_aadhaar LONGTEXT NULL,
+    doc_license LONGTEXT NULL,
+    doc_rc LONGTEXT NULL,
+    doc_photo LONGTEXT NULL,
     is_suspended TINYINT(1) DEFAULT 0,
     suspension_reason TEXT NULL,
     rejected_docs VARCHAR(255) NULL,
@@ -193,9 +193,9 @@ CREATE TABLE IF NOT EXISTS offers (
     subtitle VARCHAR(255) NOT NULL,
     discount_text VARCHAR(50) NOT NULL,
     link_url VARCHAR(255) NOT NULL,
-    image_url VARCHAR(255) NOT NULL,
+    image_url LONGTEXT NOT NULL,
     bg_gradient VARCHAR(100) DEFAULT 'linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)',
-    bg_img_url VARCHAR(255) NULL,
+    bg_img_url LONGTEXT NULL,
     badge_text VARCHAR(50) DEFAULT 'Limited Time Offer',
     badge_color VARCHAR(20) DEFAULT 'danger',
     start_date DATE NULL,
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS offers (
 CREATE TABLE IF NOT EXISTS app_settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     setting_key VARCHAR(100) NOT NULL UNIQUE,
-    setting_value VARCHAR(255) NULL,
+    setting_value LONGTEXT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -288,7 +288,7 @@ CREATE TABLE IF NOT EXISTS recipes (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     instructions TEXT,
-    image_url VARCHAR(255),
+    image_url LONGTEXT,
     prep_time VARCHAR(20),
     servings INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

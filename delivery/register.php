@@ -46,13 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!$error && $mobile_exists) {
         $error = "Mobile number already registered.";
     } elseif (!$error) {
-        $upload_dir = realpath(__DIR__ . '/../uploads/documents') . DIRECTORY_SEPARATOR;
-        if (!$upload_dir) {
-            $target_dir = __DIR__ . '/../uploads/documents/';
-            if (!is_dir($target_dir)) mkdir($target_dir, 0777, true);
-            $upload_dir = realpath($target_dir) . DIRECTORY_SEPARATOR;
-        }
-
         $doc_aadhaar = '';
         $doc_license = '';
         $doc_rc = '';
@@ -69,21 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $upload_errors_list = [];
 
         foreach ($files_to_upload as $key => &$var) {
-            if (isset($_FILES[$key]) && $_FILES[$key]['error'] == UPLOAD_ERR_OK) {
-                    $ext = strtolower(trim(pathinfo($_FILES[$key]['name'], PATHINFO_EXTENSION)));
-                    $allowed_exts = ['jpg', 'jpeg', 'png', 'pdf', 'webp'];
-                    if (in_array($ext, $allowed_exts)) {
-                    $filename = $key . '_' . preg_replace('/[^0-9]/', '', $mobile) . '_' . time() . '.' . $ext;
-                    if (move_uploaded_file($_FILES[$key]['tmp_name'], $upload_dir . $filename)) {
-                        $var = 'uploads/documents/' . $filename;
-                    } else {
-                        $upload_errors_list[] = "Failed to move $key";
-                    }
-                } else {
-                    $upload_errors_list[] = "Invalid type for $key";
-                }
-            } elseif (isset($_FILES[$key]) && $_FILES[$key]['error'] != UPLOAD_ERR_NO_FILE) {
-                $upload_errors_list[] = "Error uploading $key (Code: ".$_FILES[$key]['error'].")";
+            $upload_error = null;
+            $uploaded = storeUploadedAsset($_FILES[$key] ?? null, __DIR__ . '/../uploads/documents', $key . '_' . preg_replace('/[^0-9]/', '', $mobile) . '_', $upload_error, $allowed_exts);
+            if ($uploaded === false) {
+                $upload_errors_list[] = $key . ': ' . $upload_error;
+            } elseif ($uploaded) {
+                $var = $uploaded;
             }
         }
 
