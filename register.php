@@ -1,17 +1,13 @@
 <?php 
-require_once 'includes/header.php'; 
-$allow_regs = (int)(get_setting('allow_registrations', '1') ?? 1);
-if ($allow_regs !== 1) {
-    echo '<div class="container py-5"><div class="alert alert-warning rounded-4 shadow-sm">New registrations are currently disabled. Please try again later.</div></div>';
-    require_once 'includes/footer.php';
-    exit;
-}
+require_once 'config/db.php';
 
+$allow_regs = (int)(get_setting('allow_registrations', '1') ?? 1);
 $error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = $_POST['full_name'];
-    $email = $_POST['email'];
-    $password_plain = $_POST['password'];
+
+if ($allow_regs === 1 && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['full_name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password_plain = (string)($_POST['password'] ?? '');
 
     // Password strength validation
     $has_upper = preg_match('@[A-Z]@', $password_plain);
@@ -19,7 +15,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $has_special = preg_match('@[^\w]@', $password_plain);
     $has_digit = preg_match('@[0-9]@', $password_plain);
 
-    if (!$has_upper || !$has_lower || !$has_special || !$has_digit || strlen($password_plain) < 8) {
+    if ($name === '' || $email === '' || $password_plain === '') {
+        $error = "Please fill in all required fields.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid email address.";
+    } elseif (!$has_upper || !$has_lower || !$has_special || !$has_digit || strlen($password_plain) < 8) {
         $error = "Password must be at least 8 characters long and include capital letters, lowercase letters, numbers, and special characters.";
     } else {
         $password = password_hash($password_plain, PASSWORD_DEFAULT);
@@ -44,6 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+}
+
+require_once 'includes/header.php'; 
+
+if ($allow_regs !== 1) {
+    echo '<div class="container py-5"><div class="alert alert-warning rounded-4 shadow-sm">New registrations are currently disabled. Please try again later.</div></div>';
+    require_once 'includes/footer.php';
+    exit;
 }
 ?>
 

@@ -603,6 +603,50 @@ function isHostedUploadStorage(): bool {
     return (bool)(getenv('VERCEL') || getenv('DB_HOST'));
 }
 
+function optimizeImageBytesForDataUrl(string $bytes): ?array {
+    if (!function_exists('imagecreatefromstring') || !function_exists('imagewebp')) {
+        return null;
+    }
+
+    $source = @imagecreatefromstring($bytes);
+    if (!$source) {
+        return null;
+    }
+
+    $width = imagesx($source);
+    $height = imagesy($source);
+    if ($width <= 0 || $height <= 0) {
+        imagedestroy($source);
+        return null;
+    }
+
+    $maxDimension = 900;
+    $scale = min(1, $maxDimension / max($width, $height));
+    $targetWidth = max(1, (int)round($width * $scale));
+    $targetHeight = max(1, (int)round($height * $scale));
+
+    $target = imagecreatetruecolor($targetWidth, $targetHeight);
+    imagealphablending($target, false);
+    imagesavealpha($target, true);
+    $transparent = imagecolorallocatealpha($target, 0, 0, 0, 127);
+    imagefilledrectangle($target, 0, 0, $targetWidth, $targetHeight, $transparent);
+
+    imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+
+    ob_start();
+    $ok = imagewebp($target, null, 82);
+    $optimized = ob_get_clean();
+
+    imagedestroy($source);
+    imagedestroy($target);
+
+    if (!$ok || !$optimized || strlen($optimized) >= strlen($bytes)) {
+        return null;
+    }
+
+    return ['bytes' => $optimized, 'mime' => 'image/webp'];
+}
+
 function storeUploadedAsset($file, string $relativeDir, string $prefix, &$error_msg = null, array $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'jfif']) {
     if (!isset($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
         return null;
@@ -642,6 +686,13 @@ function storeUploadedAsset($file, string $relativeDir, string $prefix, &$error_
             return false;
         }
         $mime = $isPdf ? 'application/pdf' : ($isSvg ? 'image/svg+xml' : (mime_content_type($file['tmp_name']) ?: 'image/' . $extension));
+        if (!$isPdf && !$isSvg) {
+            $optimized = optimizeImageBytesForDataUrl($bytes);
+            if ($optimized) {
+                $bytes = $optimized['bytes'];
+                $mime = $optimized['mime'];
+            }
+        }
         return 'data:' . $mime . ';base64,' . base64_encode($bytes);
     }
 

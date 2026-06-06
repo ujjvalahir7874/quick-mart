@@ -1,5 +1,5 @@
 <?php 
-require_once 'includes/header.php'; 
+require_once 'config/db.php';
 
 if (isLoggedIn()) {
     header("Location: index.php");
@@ -8,14 +8,22 @@ if (isLoggedIn()) {
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $email = trim($_POST['email'] ?? '');
+    $password = (string)($_POST['password'] ?? '');
 
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password'])) {
+        // Handle Remember Me before redirect headers are sent.
+        if (isset($_POST['remember_me'])) {
+            $token = bin2hex(random_bytes(32));
+            $stmt = $pdo->prepare("UPDATE users SET remember_token = ? WHERE id = ?");
+            $stmt->execute([$token, $user['id']]);
+            setcookie('remember_token', $token, time() + (86400 * 30), "/");
+        }
+
         if ($user['role'] === 'admin') {
             $_SESSION['admin_id'] = $user['id'];
             $_SESSION['admin_name'] = $user['full_name'];
@@ -29,15 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Redirect to checkout if they came from there, else home
             $redirect = isset($_GET['redirect']) ? $_GET['redirect'] : 'index.php';
+            if (preg_match('/^https?:\/\//i', $redirect)) {
+                $redirect = 'index.php';
+            }
             header("Location: " . $redirect);
-        }
-        
-        // Handle Remember Me
-        if (isset($_POST['remember_me'])) {
-            $token = bin2hex(random_bytes(32));
-            $stmt = $pdo->prepare("UPDATE users SET remember_token = ? WHERE id = ?");
-            $stmt->execute([$token, $user['id']]);
-            setcookie('remember_token', $token, time() + (86400 * 30), "/");
         }
         exit;
     } else {
@@ -45,9 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch existing user email IDs for suggestions
-$stmt_emails = $pdo->query("SELECT DISTINCT email FROM users ORDER BY email ASC");
-$login_emails = $stmt_emails->fetchAll(PDO::FETCH_COLUMN);
+require_once 'includes/header.php'; 
 ?>
 
 <div class="container py-5">
@@ -82,12 +83,7 @@ $login_emails = $stmt_emails->fetchAll(PDO::FETCH_COLUMN);
                             <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Email Address</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0 rounded-start-3 px-3"><i class="bi bi-envelope text-muted"></i></span>
-                                <input type="email" name="email" class="form-control bg-light border-start-0 rounded-end-3 py-2 ps-0" placeholder="name@example.com" list="loginEmailSuggestions" required>
-                                <datalist id="loginEmailSuggestions">
-                                    <?php foreach ($login_emails as $email_suggestion): ?>
-                                        <option value="<?= htmlspecialchars($email_suggestion) ?>">
-                                    <?php endforeach; ?>
-                                </datalist>
+                                <input type="email" name="email" class="form-control bg-light border-start-0 rounded-end-3 py-2 ps-0" placeholder="name@example.com" required>
                             </div>
                         </div>
                         <div class="mb-3">
