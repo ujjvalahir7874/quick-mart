@@ -67,11 +67,7 @@
                         ?>
                         <div class="dropdown">
                             <button class="btn btn-outline-success dropdown-toggle rounded-pill p-1 pe-3 fw-medium shadow-sm transition-hover d-flex align-items-center gap-2 position-relative" type="button" data-bs-toggle="dropdown">
-                                <?php if ($user_profile_photo): ?>
-                                    <img src="<?php echo htmlspecialchars($user_profile_photo); ?>" class="rounded-circle object-fit-cover" width="35" height="35">
-                                <?php else: ?>
-                                    <i class="bi bi-person-circle fs-4 ms-2"></i> 
-                                <?php endif; ?>
+                                <img src="<?php echo htmlspecialchars(getProfileImage($user_profile_photo, $_SESSION['user_name'] ?? 'User')); ?>" class="rounded-circle object-fit-cover" width="35" height="35">
                                 <span class="d-none d-sm-inline"><?php echo explode(' ', $_SESSION['user_name'])[0]; ?></span>
                                 <?php if ($total_notifications > 0): ?>
                                     <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">

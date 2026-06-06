@@ -755,6 +755,53 @@ function uploadedAssetSrc(?string $value, string $relativePrefix = '../'): strin
     return $relativePrefix . ltrim($value, '/');
 }
 
+function isExternalOrDataAsset(?string $value): bool {
+    return (bool)preg_match('/^(https?:\/\/|data:)/i', trim((string)$value));
+}
+
+function relativeAssetExists(?string $value): bool {
+    $value = trim((string)$value);
+    if ($value === '' || isExternalOrDataAsset($value)) return false;
+
+    $path = ltrim(str_replace('\\', '/', $value), '/');
+    while (strpos($path, '../') === 0) {
+        $path = substr($path, 3);
+    }
+
+    return is_file(__DIR__ . '/../' . $path);
+}
+
+function localAssetSrc(?string $value, string $relativePrefix = ''): string {
+    $value = trim((string)$value);
+    if ($value === '') return '';
+    if (isExternalOrDataAsset($value)) return $value;
+
+    $path = ltrim(str_replace('\\', '/', $value), '/');
+    while (strpos($path, '../') === 0) {
+        $path = substr($path, 3);
+    }
+
+    return $relativePrefix . $path;
+}
+
+function hasDisplayableAsset(?string $value): bool {
+    $value = trim((string)$value);
+    if ($value === '') return false;
+    return isExternalOrDataAsset($value) || relativeAssetExists($value);
+}
+
+function getProfileImage(?string $profile_photo, ?string $name = null): string {
+    $profile_photo = trim((string)$profile_photo);
+    if ($profile_photo !== '') {
+        if (isExternalOrDataAsset($profile_photo)) return $profile_photo;
+        if (relativeAssetExists($profile_photo)) return localAssetSrc($profile_photo);
+    }
+
+    $displayName = trim((string)$name);
+    if ($displayName === '') $displayName = 'User';
+    return 'https://ui-avatars.com/api/?name=' . rawurlencode($displayName) . '&background=10b981&color=fff&bold=true';
+}
+
 if (!isAdmin()) {
     $maint = (int)(get_setting('maintenance_mode', '0') ?? 0);
     if ($maint === 1) {
@@ -814,10 +861,11 @@ function logActivity($pdo, $action) {
 // Helper to get product image with fallback to relevant category image
 function getProductImage($image_url, $product_name) {
     if (!empty($image_url)) {
-        if (strpos($image_url, 'http') === 0 || strpos($image_url, 'data:image/') === 0) return $image_url;
-        $current_dir = basename(getcwd());
-        if ($current_dir === 'admin' && strpos($image_url, 'uploads/') === 0) return '../' . $image_url;
-        return $image_url;
+        if (isExternalOrDataAsset($image_url)) return $image_url;
+        if (relativeAssetExists($image_url)) {
+            $current_dir = basename(getcwd());
+            return localAssetSrc($image_url, $current_dir === 'admin' ? '../' : '');
+        }
     }
 
     $name = strtolower(trim($product_name));
@@ -836,10 +884,11 @@ function getProductImage($image_url, $product_name) {
 // Helper to get recipe image with fallback
 function getRecipeImage($image_url, $recipe_name) {
     if (!empty($image_url)) {
-        if (strpos($image_url, 'http') === 0 || strpos($image_url, 'data:image/') === 0) return $image_url;
-        $current_dir = basename(getcwd());
-        if ($current_dir === 'admin' && strpos($image_url, 'uploads/') === 0) return '../' . $image_url;
-        return $image_url;
+        if (isExternalOrDataAsset($image_url)) return $image_url;
+        if (relativeAssetExists($image_url)) {
+            $current_dir = basename(getcwd());
+            return localAssetSrc($image_url, $current_dir === 'admin' ? '../' : '');
+        }
     }
 
     $name = strtolower(trim($recipe_name));
@@ -860,7 +909,7 @@ function getCategoryImage($image_url, $category_name) {
     $category_name = trim($category_name);
     
     // If it's a full URL, return it as is
-    if (!empty($image_url) && preg_match('/^(https?:\/\/|data:image\/)/i', $image_url)) {
+    if (!empty($image_url) && isExternalOrDataAsset($image_url)) {
         return $image_url;
     }
 
@@ -874,12 +923,10 @@ function getCategoryImage($image_url, $category_name) {
             $path = 'uploads/categories/' . $path;
         }
 
-        // Adjust path for admin panel
-        $current_dir = basename(getcwd());
-        if ($current_dir === 'admin') {
-            return '../' . $path;
+        if (relativeAssetExists($path)) {
+            $current_dir = basename(getcwd());
+            return localAssetSrc($path, $current_dir === 'admin' ? '../' : '');
         }
-        return $path;
     }
 
     // Fallback logic

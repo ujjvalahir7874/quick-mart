@@ -345,7 +345,7 @@ foreach($top5 as $dp) {
                             <span class="badge bg-white text-success rounded-pill px-3 py-2">ID: #<?= $topPerformer['id'] ?></span>
                         </div>
                         <div class="d-flex align-items-center mt-3">
-                            <?php if ($topPerformer['doc_photo']): ?>
+                            <?php if (hasDisplayableAsset($topPerformer['doc_photo'])): ?>
                                 <img src="<?= htmlspecialchars(uploadedAssetSrc($topPerformer['doc_photo'])) ?>" class="rounded-circle me-3 border border-3 border-white shadow-sm object-fit-cover" width="60" height="60">
                             <?php else: ?>
                                 <div class="bg-white bg-opacity-25 text-white rounded-circle me-3 d-flex align-items-center justify-content-center border border-3 border-white shadow-sm" style="width: 60px; height: 60px;">
@@ -429,7 +429,7 @@ foreach($top5 as $dp) {
                             <tr>
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
-                                        <?php if ($staff['doc_photo']): ?>
+                                        <?php if (hasDisplayableAsset($staff['doc_photo'])): ?>
                                             <?php $staffPhotoSrc = uploadedAssetSrc($staff['doc_photo']); ?>
                                             <img src="<?php echo htmlspecialchars($staffPhotoSrc); ?>" class="rounded-circle me-3 object-fit-cover" width="40" height="40" style="cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($staffPhotoSrc); ?>')">
                                         <?php else: ?>

@@ -178,13 +178,7 @@ require_once 'includes/header.php';
                 <div class="card-body p-4 p-md-5">
                     <div class="d-flex align-items-center gap-4 mb-5 pb-4 border-bottom">
                         <div class="position-relative profile-photo-container" onclick="triggerPhotoUpload()" style="cursor: pointer;">
-                            <?php if ($user['profile_photo']): ?>
-                                <img src="<?php echo htmlspecialchars($user['profile_photo']); ?>" class="rounded-4 shadow-lg object-fit-cover profile-img" style="width: 100px; height: 100px;">
-                            <?php else: ?>
-                                <div class="bg-success rounded-4 d-flex align-items-center justify-content-center shadow-lg transition-hover profile-img" style="width: 100px; height: 100px; background: linear-gradient(135deg, #198754 0%, #157347 100%);">
-                                    <span class="text-white fw-800 display-4 mb-0"><?php echo strtoupper(substr($user['full_name'], 0, 1)); ?></span>
-                                </div>
-                            <?php endif; ?>
+                            <img src="<?php echo htmlspecialchars(getProfileImage($user['profile_photo'], $user['full_name'])); ?>" class="rounded-4 shadow-lg object-fit-cover profile-img" style="width: 100px; height: 100px;">
                             <div class="position-absolute bottom-0 end-0 bg-success text-white rounded-circle p-2 shadow-sm border border-2 border-white edit-overlay" style="transform: translate(25%, 25%);">
                                 <i class="bi bi-camera-fill" style="font-size: 1rem;"></i>
                             </div>

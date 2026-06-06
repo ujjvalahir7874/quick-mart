@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <div class="profile-header">
     <div class="avatar-large">
-        <?php if($partner['doc_photo']): ?>
+        <?php if(hasDisplayableAsset($partner['doc_photo'])): ?>
             <img src="<?= htmlspecialchars(uploadedAssetSrc($partner['doc_photo'])) ?>" class="w-100 h-100 object-fit-cover rounded-circle">
         <?php else: ?>
             <i class="bi bi-person-fill"></i>
@@ -233,8 +233,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         foreach($docs as $doc):
             $is_rejected = in_array($doc['id'], $rejected_list);
             $doc_path = $partner['doc_' . $doc['id']];
-            $doc_src = uploadedAssetSrc($doc_path);
-            $is_doc_image = preg_match('/^data:image\//i', (string)$doc_path) || preg_match('/\.(jpg|jpeg|png|gif|webp|avif|jfif)$/i', (string)$doc_path);
+            $doc_has_asset = hasDisplayableAsset($doc_path);
+            $doc_src = $doc_has_asset ? uploadedAssetSrc($doc_path) : '';
+            $is_doc_image = $doc_has_asset && (preg_match('/^data:image\//i', (string)$doc_path) || preg_match('/\.(jpg|jpeg|png|gif|webp|avif|jfif)$/i', (string)$doc_path));
             $rejection_reason = $partner['rejection_reason_' . $doc['id']];
         ?>
         <div class="info-item flex-column align-items-stretch">
@@ -253,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                 </div>
                 <div class="ms-3 text-end d-flex align-items-center gap-2">
-                    <?php if($doc_path): ?>
+                    <?php if($doc_path && $doc_has_asset): ?>
                         <?php if($is_doc_image): ?>
                             <div onclick="window.open('<?= htmlspecialchars($doc_src) ?>')" style="cursor: pointer;">
                                 <img src="<?= htmlspecialchars($doc_src) ?>" class="rounded border" style="width: <?= $doc['id'] == 'photo' ? '40px' : '60px' ?>; height: 40px; object-fit: cover;">

@@ -199,11 +199,7 @@ $users = $pdo->query("
                             <tr class="customer-row">
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
-                                        <?php if ($u['profile_photo']): ?>
-                                            <img src="<?php echo htmlspecialchars(uploadedAssetSrc($u['profile_photo'])); ?>" class="rounded-circle me-3 object-fit-cover" width="40" height="40">
-                                        <?php else: ?>
-                                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($u['full_name']); ?>&background=random" class="rounded-circle me-3" width="40" height="40">
-                                        <?php endif; ?>
+                                        <img src="<?php echo htmlspecialchars(getProfileImage($u['profile_photo'], $u['full_name'])); ?>" class="rounded-circle me-3 object-fit-cover" width="40" height="40">
                                         <div>
                                             <div class="fw-bold"><?php echo htmlspecialchars($u['full_name']); ?></div>
                                             <div class="extra-small text-muted">ID: #<?php echo $counter++; ?></div>
