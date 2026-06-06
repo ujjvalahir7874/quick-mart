@@ -10,8 +10,8 @@ if (isAdmin()) {
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $email = trim($_POST['email'] ?? '');
+    $password = (string)($_POST['password'] ?? '');
 
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? AND role = 'admin'");
     $stmt->execute([$email]);
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $token = bin2hex(random_bytes(32));
             $stmt = $pdo->prepare("UPDATE users SET remember_token = ? WHERE id = ?");
             $stmt->execute([$token, $user['id']]);
-            setcookie('remember_token', $token, time() + (86400 * 30), "/"); // 30 days
+            setRememberCookieValue($token);
         }
 
         header("Location: dashboard.php");
@@ -37,9 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch admin email IDs for suggestions
-$stmt_admin_emails = $pdo->query("SELECT DISTINCT email FROM users WHERE role = 'admin' ORDER BY email ASC");
-$admin_emails = $stmt_admin_emails->fetchAll(PDO::FETCH_COLUMN);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,12 +136,7 @@ $admin_emails = $stmt_admin_emails->fetchAll(PDO::FETCH_COLUMN);
                     <form method="POST">
                         <div class="mb-3">
                             <label class="form-label small fw-semibold text-muted">Admin Email</label>
-                            <input type="email" name="email" class="form-control" required placeholder="admin@quickmart.com" list="adminEmailSuggestions">
-                            <datalist id="adminEmailSuggestions">
-                                <?php foreach ($admin_emails as $email_suggestion): ?>
-                                    <option value="<?= htmlspecialchars($email_suggestion) ?>">
-                                <?php endforeach; ?>
-                            </datalist>
+                            <input type="email" name="email" class="form-control" required placeholder="admin@quickmart.com" autocomplete="username">
                         </div>
                         <div class="mb-4">
                             <label class="form-label small fw-semibold text-muted">Password</label>
@@ -159,7 +151,7 @@ $admin_emails = $stmt_admin_emails->fetchAll(PDO::FETCH_COLUMN);
                             </div>
                         </div>
                         <div class="mb-4 form-check d-flex align-items-center">
-                            <input type="checkbox" name="remember_me" class="form-check-input mt-0 me-2" id="remember_me">
+                            <input type="checkbox" name="remember_me" class="form-check-input mt-0 me-2" id="remember_me" checked>
                             <label class="form-check-label small text-muted" for="remember_me">Remember this device</label>
                         </div>
                         <button type="submit" class="btn btn-success w-100 mb-3">Sign In</button>

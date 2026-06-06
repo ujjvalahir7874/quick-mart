@@ -11,7 +11,7 @@ if (isset($_COOKIE['remember_token'])) {
     $stmt = $pdo->prepare("UPDATE delivery_persons SET remember_token = NULL WHERE remember_token = ?");
     $stmt->execute([$token]);
     
-    setcookie('remember_token', '', time() - 3600, "/");
+    clearRememberCookieValue();
 }
 
 // If logging out from admin

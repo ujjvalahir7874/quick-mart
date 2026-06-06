@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $token = bin2hex(random_bytes(32));
             $stmt = $pdo->prepare("UPDATE delivery_persons SET remember_token = ? WHERE id = ?");
             $stmt->execute([$token, $user['id']]);
-            setcookie('remember_token', $token, time() + (86400 * 30), "/"); // 30 days
+            setRememberCookieValue($token);
         }
 
         header("Location: index.php");

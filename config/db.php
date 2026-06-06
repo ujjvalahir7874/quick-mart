@@ -540,9 +540,30 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+function isSecureRequest(): bool {
+    return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+        || (bool)getenv('VERCEL');
+}
+
+function setRememberCookieValue(string $token, ?int $expires = null): void {
+    setcookie('remember_token', $token, [
+        'expires' => $expires ?? (time() + (86400 * 30)),
+        'path' => '/',
+        'secure' => isSecureRequest(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function clearRememberCookieValue(): void {
+    setRememberCookieValue('', time() - 3600);
+}
+
 // Handle "Remember Me" auto-login
 if (isset($_COOKIE['remember_token']) && !isset($_SESSION['user_id']) && !isset($_SESSION['admin_id']) && !isset($_SESSION['delivery_partner_id'])) {
     $token = $_COOKIE['remember_token'];
+    $remembered = false;
     
     // Check users table (Admin or Customer)
     $stmt = $pdo->prepare("SELECT * FROM users WHERE remember_token = ?");
@@ -559,6 +580,7 @@ if (isset($_COOKIE['remember_token']) && !isset($_SESSION['user_id']) && !isset(
             $_SESSION['user_name'] = $user['full_name'];
             $_SESSION['user_role'] = $user['role'];
         }
+        $remembered = true;
     } else {
         // Check delivery_persons table
         $stmt = $pdo->prepare("SELECT * FROM delivery_persons WHERE remember_token = ?");
@@ -568,7 +590,12 @@ if (isset($_COOKIE['remember_token']) && !isset($_SESSION['user_id']) && !isset(
         if ($partner) {
             $_SESSION['delivery_partner_id'] = $partner['id'];
             $_SESSION['delivery_partner_name'] = $partner['name'];
+            $remembered = true;
         }
+    }
+
+    if (!$remembered) {
+        clearRememberCookieValue();
     }
 }
 
